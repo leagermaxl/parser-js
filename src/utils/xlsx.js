@@ -19,7 +19,6 @@ const filePath = 'orders.xlsx';
 
 export async function createStyledExcel(orders) {
   let workbook;
-
   // Если файл существует, загружаем его
   if (fs.existsSync(filePath)) {
     workbook = new ExcelJS.Workbook();
