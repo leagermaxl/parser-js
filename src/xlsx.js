@@ -95,7 +95,7 @@ export async function createStyledExcel(orders) {
   console.log('Файл orders.xlsx с оформлением сохранён!');
 }
 
-createStyledExcel();
+
 
 // async function createStyledExcel() {
 //   const workbook = new ExcelJS.Workbook();
