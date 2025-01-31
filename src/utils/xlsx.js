@@ -30,7 +30,7 @@ export async function createStyledExcel(orders) {
     'Product Name',
     'Quantity',
   ]);
-
+  
   // Стили для заголовков
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Белый текст
