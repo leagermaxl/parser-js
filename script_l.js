@@ -2,6 +2,8 @@ import axios from 'axios';
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'path';
+import { createStyledExcel } from './xlsx.js';
+// import XLSX from 'xlsx';
 
 //FETCH DATA
 
@@ -404,8 +406,8 @@ const obj = [
 
 const main = async () => {
   const orders = await requestsForOrders(urlPage, urlOrder);
-  console.log(orders);
-  saveCSV(orders);
+  console.log("orders", orders);
+  await createStyledExcel(orders);
 };
 
 main();
