@@ -1,7 +1,6 @@
 import axios from 'axios';
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
-import path from 'path';
 import { createStyledExcel } from './xlsx.js';
 // import XLSX from 'xlsx';
 
@@ -64,7 +63,7 @@ const processFetchData = async (path, linkMakr) => {
   //console.log('Найденные таблицы:', tableData);
 
   const result = processOrderData(tableData);
-  console.log('Обработанный заказ:\n', result);
+  // console.log('Обработанный заказ:\n', result);
   return result;
 };
 
@@ -147,8 +146,8 @@ function processOrderData(orderArray) {
 
   const processedOrder = Object.assign({
     orderNumbers: {
-      orderId: '',
-      orderNum: '',
+      orderId: 0,
+      orderNum: 0,
     },
     orderDate: '',
     totalAmount: '',
@@ -163,8 +162,8 @@ function processOrderData(orderArray) {
 
     if (OrberNumber) {
       const sep = OrberNumber.match(/^Заказ #(\d+)\((\d+)\)$/);
-      processedOrder.orderNumbers.orderId = sep[1];
-      processedOrder.orderNumbers.orderNum = sep[2];
+      processedOrder.orderNumbers.orderId = parseInt(sep[1]);
+      processedOrder.orderNumbers.orderNum = parseInt(sep[2]);
     }
 
     if (products) {
@@ -187,21 +186,6 @@ function processOrderData(orderArray) {
       processedOrder.coupon = couponField;
     }
   });
-
-  // if (processedOrder.amoutWithCoupon <= processedOrder.totalAmount) {
-  //   if (processedOrder.coupon === null) {
-  //     delete processedOrder.coupon;
-  //     processedOrder.ERROR = 'ПЕРЕПРОВЕРЬТЕ КУПОН потому что есть скидка';
-  //   } else delete processedOrder.ERROR;
-  // } else {
-  //   if (processedOrder.coupon !== null) {
-  //     processedOrder.ERROR = 'НЕ СОШЛАСЬ СУММА. Купон не сработал';
-  //   } else if (processedOrder.ERROR === null) {
-  //     delete processedOrder.amoutWithCoupon;
-  //     delete processedOrder.coupon;
-  //     delete processedOrder.ERROR;
-  //   }
-  // }
 
   return processedOrder;
 }
@@ -227,35 +211,37 @@ const processFetchDataPages = async (path, isLink) => {
 
 async function processOrders(orderIds, urlOrder) {
   const ordersData = [];
-  for (let i = 0; i < Math.min(orderIds.length, 2); i++) {
+  for (let i = orderIds.length - 1; i >= 0; i--) {
+    // for (let i = 0; i < Math.min(orderIds.length, 50); i++) {
     console.log('myCallback');
     const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderId}`);
+    // console.log(orderIds);
     console.log('[REQUEST TO]:', `${updatedUrl}`);
 
-    ordersData[i] = await processFetchData(updatedUrl, true);
+    ordersData.push(await processFetchData(updatedUrl, true));
+    console.log('data', ordersData);
 
-    console.log(ordersData[i]);
+    if (i === orderIds.length - 4) return ordersData;
 
-    if (i === orderIds.length - 1) return;
-
-    const { max, min } = { max: 5000, min: 500 };
+    const { max, min } = { max: 3000, min: 500 };
     const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;
 
     await new Promise((resolve) => setTimeout(resolve, randomInterval));
   }
+  console.log('asdasdasdasd', ordersData);
   return ordersData;
 }
 
 async function requestsForOrders(urlPage, urlOrder) {
   console.log('requestsForOrders');
-  let page = 0;
+  let page = 2;
   const ordersData = [];
 
   // const { pages } = await processFetchDataPages(urlPage, true);
   const pages = 2;
   console.log(pages);
 
-  while (page < pages) {
+  while (page >= 0) {
     console.log('while');
     console.log('page', page);
     const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
@@ -265,81 +251,13 @@ async function requestsForOrders(urlPage, urlOrder) {
 
     ordersData.push(...(await processOrders(orderIds, urlOrder)));
 
-    page++;
+    page--;
   }
+  console.log('ordersData', ordersData);
   return ordersData;
 }
 
-function convertToCSV(orders) {
-  let csv =
-    'Order ID;Order Number;Order Date;Total Amount;Amount With Coupon;Coupon;Product Name;Quantity\n';
-
-  orders.forEach((order) => {
-    csv += `${order.orderNumbers.orderId};${order.orderNumbers.orderNum};${order.orderDate};${
-      order.totalAmount
-    };${order.amoutWithCoupon};${order.coupon?.code.toLowerCase()};`;
-    order.products.map((product, index) => {
-      csv +=
-        index === 0
-          ? `${product.name};${product.quantity}\n`
-          : `"";"";"";"";"";"";"${product.name}";${product.quantity}\n`;
-    });
-  });
-
-  return csv;
-}
-
-async function saveCSV(orders) {
-  const csvData = convertToCSV(orders);
-  const filePath = path.join(process.cwd(), 'orders.csv');
-
-  const csvWithBOM = '\uFEFF' + csvData;
-
-  try {
-    await fs.writeFile(filePath, csvWithBOM, 'utf8');
-    console.log(`✅ CSV-файл успешно создан: ${filePath}`);
-  } catch (error) {
-    console.error('❌ Ошибка при записи файла:', error);
-  }
-}
-
-//INTERVAL REQUESTS
-// async function requestsForOrders(urlPage, urlOrder) {
-//   console.log('requestsForOrders');
-//   let i = 0;
-//   let page = 0;
-
-//   const { pages } = await processFetchDataPages(urlPage, true);
-//   console.log(pages);
-
-//   while (i < 50 && page < pages) {
-//     console.log('while');
-//     i = 0;
-//     const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
-//     console.log(updatedUrlPage);
-//     const { orderIds } = await processFetchDataPages(updatedUrlPage, true);
-//     // console.log(orderIds);
-//     function myCallback() {
-//       console.log('myCallback');
-//       const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderId}`);
-//       console.log('[REQUEST TO]:', `${updatedUrl}`);
-
-//       // const filePath = './HTML.html';
-//       processFetchData(updatedUrl, true);
-
-//       if (i === orderIds.length - 1) return;
-
-//       const { max, min } = { max: 5000, min: 500 };
-//       const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;
-
-//       setTimeout(myCallback, randomInterval);
-//       i++;
-//     }
-
-//     myCallback();
-//     page++;
-//   }
-// }
+const aarrr = [{}, {}, {}, {}];
 
 const arr = [764437709, 764401309, 764392909, 764389509, 764389109];
 const urlPage =
@@ -406,7 +324,7 @@ const obj = [
 
 const main = async () => {
   const orders = await requestsForOrders(urlPage, urlOrder);
-  console.log("orders", orders);
+  console.log('orders', orders);
   await createStyledExcel(orders);
 };
 
