@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 const orderSchema = new Schema(
   {
     orderNumbers: { orderId: Number, orderNum: Number },
+    orderStatus: { value: Number, text: String },
     orderDate: String,
     totalAmount: String,
     amoutWithCoupon: String,

@@ -18,6 +18,8 @@ export const processFetchData = async (path, linkMakr) => {
   const OrderSelectedElement = document.querySelector('td.draggable_title span.title');
   const OrberNumber = OrderSelectedElement.textContent;
 
+  const orderStatus = getOrderStatus(document, '#order_status_style');
+
   const products = getProducts(document, 'tr:not(.view-hidden)');
 
   const tableData = Array.from(tables).map((table, index) => {
@@ -37,6 +39,7 @@ export const processFetchData = async (path, linkMakr) => {
       tableIndex: index + 1,
       data,
       OrberNumber,
+      orderStatus,
       products,
     };
   });
@@ -47,6 +50,15 @@ export const processFetchData = async (path, linkMakr) => {
   console.log('Обработанный заказ:\n', result);
   return result;
 };
+
+function getOrderStatus(document, selector) {
+  const selectedField = document.querySelector(selector);
+  const selectedOption = selectedField.options[selectedField.selectedIndex];
+  return {
+    value: parseInt(selectedOption.value),
+    text: selectedOption.textContent.trim(),
+  };
+}
 
 function getProducts(document, selector) {
   const rows = document.querySelectorAll(selector);
@@ -127,6 +139,7 @@ export function processOrderData(orderArray) {
       orderId: 0,
       orderNum: 0,
     },
+    orderStatus: {},
     orderDate: '',
     totalAmount: '',
     amoutWithCoupon: '',
@@ -136,12 +149,16 @@ export function processOrderData(orderArray) {
   });
 
   orderArray.forEach((item) => {
-    const { data, OrberNumber, products } = item;
+    const { data, OrberNumber, products, orderStatus } = item;
 
     if (OrberNumber) {
       const sep = OrberNumber.match(/^Заказ #(\d+)\((\d+)\)$/);
       processedOrder.orderNumbers.orderId = parseInt(sep[1]);
       processedOrder.orderNumbers.orderNum = parseInt(sep[2]);
+    }
+
+    if (orderStatus) {
+      processedOrder.orderStatus = orderStatus;
     }
 
     if (products) {
