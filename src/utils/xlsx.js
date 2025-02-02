@@ -52,7 +52,7 @@ export async function createStyledExcel(orders) {
   }
 
   let rowIndex = worksheet.rowCount + 1; // Начинаем с первой свободной строки
-
+  
   orders.forEach((order) => {
     const startRow = rowIndex;
     order.products.forEach((product, index) => {
