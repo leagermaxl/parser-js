@@ -2,9 +2,9 @@ import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import { fetchData } from '../fetch/fetchUtils.js';
 
-export const processFetchData = async (path, linkMakr) => {
+export const processFetchData = async (path, isLink) => {
   let html = null;
-  if (!linkMakr) html = await fs.readFile(path, 'utf-8');
+  if (!isLink) html = await fs.readFile(path, 'utf-8');
   else html = await fetchData(path);
 
   // console.log('html', html);
@@ -16,7 +16,7 @@ export const processFetchData = async (path, linkMakr) => {
   // console.log(tables);
 
   const OrderSelectedElement = document.querySelector('td.draggable_title span.title');
-  const OrberNumber = OrderSelectedElement.textContent;
+  const OrderNumber = OrderSelectedElement.textContent;
 
   const orderStatus = getOrderStatus(document, '#order_status_style');
 
@@ -38,7 +38,7 @@ export const processFetchData = async (path, linkMakr) => {
     return {
       tableIndex: index + 1,
       data,
-      OrberNumber,
+      OrderNumber: OrderNumber,
       orderStatus,
       products,
     };
@@ -72,11 +72,11 @@ function getProducts(document, selector) {
       const quantityText = quantityCell.textContent.trim();
       const quantity = parseFloat(quantityText.replace(/[^0-9.,]/g, ''));
 
-      const prodname = nameElement.textContent.trim();
+      const productName = nameElement.textContent.trim();
 
       return {
         quantity,
-        name: prodname,
+        name: productName,
       };
     });
 
@@ -135,26 +135,24 @@ export function processOrderData(orderArray) {
   const couponField = parseCoupon(orderArray[3].data);
 
   const processedOrder = Object.assign({
-    orderNumbers: {
-      orderId: 0,
-      orderNum: 0,
-    },
+    orderId: 0,
+    orderNum: 0,
     orderStatus: {},
-    orderDate: '',
+    orderDate: null,
     totalAmount: '',
-    amoutWithCoupon: '',
+    amountWithCoupon: '',
     products: [],
     coupon: null,
     // ERROR: null,
   });
 
   orderArray.forEach((item) => {
-    const { data, OrberNumber, products, orderStatus } = item;
+    const { data, OrderNumber, products, orderStatus } = item;
 
-    if (OrberNumber) {
-      const sep = OrberNumber.match(/^Заказ #(\d+)\((\d+)\)$/);
-      processedOrder.orderNumbers.orderId = parseInt(sep[1]);
-      processedOrder.orderNumbers.orderNum = parseInt(sep[2]);
+    if (OrderNumber) {
+      const sep = OrderNumber.match(/^Заказ #(\d+)\((\d+)\)$/);
+      processedOrder.orderId = parseInt(sep[1]);
+      processedOrder.orderNum = parseInt(sep[2]);
     }
 
     if (orderStatus) {
@@ -166,7 +164,7 @@ export function processOrderData(orderArray) {
     }
 
     if (data['Дата заказа']) {
-      processedOrder.orderDate = data['Дата заказа'];
+      processedOrder.orderDate = new Date(data['Дата заказа']);
     }
 
     if (data['Сумма']) {
@@ -174,7 +172,7 @@ export function processOrderData(orderArray) {
     }
 
     if (data['Сумма к оплате']) {
-      processedOrder.amoutWithCoupon = data['Сумма к оплате'];
+      processedOrder.amountWithCoupon = data['Сумма к оплате'];
     }
 
     if (couponField) {
@@ -184,7 +182,7 @@ export function processOrderData(orderArray) {
   return processedOrder;
 }
 
-export const processFetchDataPages = async (path, isLink) => {
+export const processFetchOrders = async (path, isLink, lastOrderIdDB) => {
   let html = null;
   if (!isLink) html = await fs.readFile(path, 'utf-8');
   else html = await fetchData(path);
@@ -192,13 +190,17 @@ export const processFetchDataPages = async (path, isLink) => {
   const dom = new JSDOM(html);
   const document = dom.window.document;
 
-  const pages = parseInt(document.querySelector('.page-nums').textContent.trim().split(/\s+/)[1]);
   const orderIdsHTML = document.querySelectorAll('tr.order td.order-number span.objectAction');
 
-  const orderIds = Array.from(orderIdsHTML).map((orderId) => {
+  const orderIds = [];
+  const hasOrder = Array.from(orderIdsHTML).some((orderId) => {
     const order = orderId.textContent.replace(/[()]/g, '').split(/\s+/);
-    return { orderNumber: order[0], orderId: order[1] };
-  });
 
-  return { pages, orderIds };
+    if (parseInt(order[0]) === lastOrderIdDB) return true;
+
+    orderIds.push({ orderNumber: order[0], orderId: order[1] });
+  });
+  // console.log(hasOrder);
+  // console.log(orderIds);
+  return hasOrder ? orderIds : lastOrderIdDB ? null : orderIds;
 };

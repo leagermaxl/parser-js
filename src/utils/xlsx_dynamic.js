@@ -19,9 +19,7 @@ function getAllFields(orders) {
         fields.add(`product_${key}`); // Добавляем префикс, чтобы избежать конфликтов имен
       });
     });
-  });   
-
-  
+  });
 
   return Array.from(fields);
 }
@@ -116,113 +114,4 @@ export async function createStyledExcel(orders) {
   console.log('Новые заказы добавлены в orders.xlsx!');
 }
 
-// Пример данных
-const orders = [
-  {
-    orderNumbers: { orderId: 19362, orderNum: 765809509 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '01.02.25 03:56 UTC+5',
-    totalAmount: '4 280.00 руб.',
-    amoutWithCoupon: '4 560.00 руб.',
-    products: [
-      { quantity: 1, name: 'Идерил Гель глубокого очищения' },
-      { quantity: 1, name: 'Атокальм Крем с церамидами' },
-      {
-        quantity: 1,
-        name: 'Себумин натуральное мыло с маслом ним и прополисом'
-      }
-    ],
-    coupon: null
-  },
-  {
-    orderNumbers: { orderId: 19362, orderNum: 765809509 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '01.02.25 03:56 UTC+5',
-    totalAmount: '4 280.00 руб.',
-    amoutWithCoupon: '4 560.00 руб.',
-    products: [
-      { quantity: 1, name: 'Идерил Гель глубокого очищения' },
-      { quantity: 1, name: 'Атокальм Крем с церамидами' },
-      {
-        quantity: 1,
-        name: 'Себумин натуральное мыло с маслом ним и прополисом'
-      }
-    ],
-    coupon: null
-  },
-  {
-    orderNumbers: { orderId: 19362, orderNum: 765809509 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '01.02.25 03:56 UTC+5',
-    totalAmount: '4 280.00 руб.',
-    amoutWithCoupon: '4 560.00 руб.',
-    products: [
-      { quantity: 1, name: 'Идерил Гель глубокого очищения' },
-      { quantity: 1, name: 'Атокальм Крем с церамидами' },
-      {
-        quantity: 1,
-        name: 'Себумин натуральное мыло с маслом ним и прополисом'
-      }
-    ],
-    coupon: null
-  },
-  {
-    orderNumbers: { orderId: 19359, orderNum: 765742709 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '31.01.25 23:48 UTC+5',
-    totalAmount: '14 580.00 руб.',
-    amoutWithCoupon: '14 580.00 руб.',
-    products: [
-      {
-        quantity: 3,
-        name: 'Фоликан AL/PG Сыворотка-активатор двойного действия.'
-      }
-    ],
-    coupon: null
-  },
-  {
-    orderNumbers: { orderId: 19359, orderNum: 765742709 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '31.01.25 23:48 UTC+5',
-    totalAmount: '14 580.00 руб.',
-    amoutWithCoupon: '14 580.00 руб.',
-    products: [
-      {
-        quantity: 3,
-        name: 'Фоликан AL/PG Сыворотка-активатор двойного действия.'
-      }
-    ],
-    coupon: null
-  },
-  {
-    orderNumbers: { orderId: 19310, orderNum: 764437709 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '30.01.25 19:56 UTC+5',
-    totalAmount: '10 260.00 руб.',
-    amoutWithCoupon: '9 234.00 руб.',
-    products: [
-      {
-        quantity: 2,
-        name: 'Фоликан AL/PG Сыворотка-активатор двойного действия.'
-      }
-    ],
-    coupon: { discountPercent: '10%', code: 'Curlegina' }
-  },
-  {
-    orderNumbers: { orderId: 19310, orderNum: 764437709 },
-    orderStatus: { value: 2, text: 'В работе' },
-    orderDate: '30.01.25 19:56 UTC+5',
-    totalAmount: '10 260.00 руб.',
-    amoutWithCoupon: '9 234.00 руб.',
-    products: [
-      {
-        quantity: 2,
-        name: 'Фоликан AL/PG Сыворотка-активатор двойного действия.'
-      }
-    ],
-    coupon: { discountPercent: '10%', code: 'Curlegina' }
-  }
-];
-
-
-createStyledExcel(orders).catch(console.error);
+// createStyledExcel(orders).catch(console.error);

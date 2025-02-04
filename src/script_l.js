@@ -1,6 +1,7 @@
 import { connectToDatabase, fetchAndSaveDataToDB } from './db/db.js';
 import { requestsForOrders } from './utils/utils.js';
 import { createStyledExcel } from './utils/xlsx.js';
+import { createStyledExcel as createStyledExcelDynamic } from './utils/xlsx_dynamic.js';
 
 const urlPage =
   'https://cp21.megagroup.ru/-/cms/v1/shop2/order/?shop_id=4373441&ver_id=1586314&access=u%3B1623555&p=0';
@@ -9,9 +10,10 @@ const urlOrder =
 
 const main = async () => {
   await connectToDatabase();
-  const orders = await requestsForOrders(urlPage, urlOrder);
+  const orders = await requestsForOrders(urlPage, urlOrder, 19360);
   console.log('orders', orders);
   await createStyledExcel(orders);
+  await createStyledExcelDynamic(orders);
   fetchAndSaveDataToDB(orders);
 };
 

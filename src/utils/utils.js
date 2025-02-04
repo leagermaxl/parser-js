@@ -1,4 +1,4 @@
-import { processFetchData, processFetchDataPages } from '../parser/parserUtils.js';
+import { processFetchData, processFetchOrders } from '../parser/parserUtils.js';
 
 export async function processOrders(orderIds, urlOrder) {
   const ordersData = [];
@@ -10,7 +10,7 @@ export async function processOrders(orderIds, urlOrder) {
 
     ordersData.push(await processFetchData(updatedUrl, true));
 
-    if (i === orderIds.length - 4) return ordersData;
+    if (i === orderIds.length - 3) return ordersData;
 
     const { max, min } = { max: 3000, min: 500 };
     const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;
@@ -20,13 +20,18 @@ export async function processOrders(orderIds, urlOrder) {
   return ordersData;
 }
 
-export async function requestsForOrders(urlPage, urlOrder) {
-  let page = 2;
-  const ordersData = [];
+export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
+  let pages = 0;
 
-  // const { pages } = await processFetchDataPages(urlPage, true);
-  const pages = 2;
-  console.log(pages);
+  while (
+    (await processFetchOrders(urlPage.replace(/(p=)\d+/, `$1${pages}`), true, lastOrderIdDB)) ==
+    null
+  ) {
+    pages++;
+    console.log(pages);
+  }
+  let page = pages;
+  const ordersData = [];
 
   while (page >= 0) {
     console.log('while');
@@ -34,7 +39,13 @@ export async function requestsForOrders(urlPage, urlOrder) {
     const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
     console.log(updatedUrlPage);
 
-    const { orderIds } = await processFetchDataPages(updatedUrlPage, true);
+    let orderIds;
+    if (ordersData.length === 0) {
+      orderIds = await processFetchOrders(updatedUrlPage, true, lastOrderIdDB);
+    } else {
+      orderIds = await processFetchOrders(updatedUrlPage, true);
+    }
+    // console.log('orderIds', orderIds[0]);
 
     ordersData.push(...(await processOrders(orderIds, urlOrder)));
 

@@ -4,16 +4,17 @@ const Schema = mongoose.Schema;
 
 const orderSchema = new Schema(
   {
-    orderNumbers: { orderId: Number, orderNum: Number },
+    orderId: Number,
+    orderNum: Number,
     orderStatus: { value: Number, text: String },
-    orderDate: String,
+    orderDate: Date,
     totalAmount: String,
-    amoutWithCoupon: String,
+    amountWithCoupon: String,
     products: [
       {
         quantity: Number,
         name: String,
-        _id: false, 
+        _id: false,
       },
     ],
     coupon: { discountPercent: String, code: String },
