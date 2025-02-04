@@ -5,7 +5,7 @@ export async function processOrders(orderIds, urlOrder) {
   for (let i = orderIds.length - 1; i >= 0; i--) {
     // for (let i = 0; i < Math.min(orderIds.length, 50); i++) {
     console.log('myCallback');
-    const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderId}`);
+    const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderNum}`);
     console.log('[REQUEST TO]:', `${updatedUrl}`);
 
     ordersData.push(await processFetchData(updatedUrl, true));
@@ -45,7 +45,7 @@ export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
     } else {
       orderIds = await processFetchOrders(updatedUrlPage, true);
     }
-    // console.log('orderIds', orderIds[0]);
+    // console.log('orderIds', orderIds);
 
     ordersData.push(...(await processOrders(orderIds, urlOrder)));
 

@@ -196,9 +196,9 @@ export const processFetchOrders = async (path, isLink, lastOrderIdDB) => {
   const hasOrder = Array.from(orderIdsHTML).some((orderId) => {
     const order = orderId.textContent.replace(/[()]/g, '').split(/\s+/);
 
-    if (parseInt(order[0]) === lastOrderIdDB) return true;
+    orderIds.push({ orderId: order[0], orderNum: order[1] });
 
-    orderIds.push({ orderNumber: order[0], orderId: order[1] });
+    if (parseInt(order[0]) === lastOrderIdDB) return true;
   });
   // console.log(hasOrder);
   // console.log(orderIds);
