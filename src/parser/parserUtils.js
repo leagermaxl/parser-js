@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
 import { fetchData } from '../fetch/fetchUtils.js';
+import { DateTime } from 'luxon';
 
 export const processFetchData = async (path, isLink) => {
   let html = null;
@@ -164,7 +165,9 @@ export function processOrderData(orderArray) {
     }
 
     if (data['Дата заказа']) {
-      processedOrder.orderDate = new Date(data['Дата заказа']);
+      processedOrder.orderDate = DateTime.fromFormat(data['Дата заказа'], "dd.MM.yy HH:mm 'UTC'Z")
+        .toUTC()
+        .toJSDate();
     }
 
     if (data['Сумма']) {
@@ -196,9 +199,9 @@ export const processFetchOrders = async (path, isLink, lastOrderIdDB) => {
   const hasOrder = Array.from(orderIdsHTML).some((orderId) => {
     const order = orderId.textContent.replace(/[()]/g, '').split(/\s+/);
 
-    orderIds.push({ orderId: order[0], orderNum: order[1] });
-
     if (parseInt(order[0]) === lastOrderIdDB) return true;
+
+    orderIds.push({ orderId: order[0], orderNum: order[1] });
   });
   // console.log(hasOrder);
   // console.log(orderIds);

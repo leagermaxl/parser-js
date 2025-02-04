@@ -2,6 +2,7 @@ import { processFetchData, processFetchOrders } from '../parser/parserUtils.js';
 
 export async function processOrders(orderIds, urlOrder) {
   const ordersData = [];
+
   for (let i = orderIds.length - 1; i >= 0; i--) {
     // for (let i = 0; i < Math.min(orderIds.length, 50); i++) {
     console.log('myCallback');
@@ -10,7 +11,7 @@ export async function processOrders(orderIds, urlOrder) {
 
     ordersData.push(await processFetchData(updatedUrl, true));
 
-    if (i === orderIds.length - 3) return ordersData;
+    if (i === orderIds.length - 50) return ordersData;
 
     const { max, min } = { max: 3000, min: 500 };
     const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;

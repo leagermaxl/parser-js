@@ -1,4 +1,4 @@
-import { connectToDatabase, fetchAndSaveDataToDB } from './db/db.js';
+import { connectToDatabase, fetchAndSaveDataToDB, statusFilteredDataToDB, disconnectFromDatabase} from './db/db.js';
 import { requestsForOrders } from './utils/utils.js';
 import { createStyledExcel } from './utils/xlsx.js';
 import { createStyledExcel as createStyledExcelDynamic } from './utils/xlsx_dynamic.js';
@@ -10,11 +10,18 @@ const urlOrder =
 
 const main = async () => {
   await connectToDatabase();
-  const orders = await requestsForOrders(urlPage, urlOrder, 19360);
+  const orders = await requestsForOrders(urlPage, urlOrder, 19370);
   console.log('orders', orders);
+  //DB
+  await fetchAndSaveDataToDB(orders);
+  await statusFilteredDataToDB(2);
+  await  disconnectFromDatabase();
+
+  //FILE
   await createStyledExcel(orders);
   await createStyledExcelDynamic(orders);
-  fetchAndSaveDataToDB(orders);
+  
+
 };
 
 main();

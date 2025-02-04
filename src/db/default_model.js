@@ -22,4 +22,6 @@ const orderSchema = new Schema(
   { versionKey: false },
 );
 
-export const Orders = mongoose.model('orderSchema ', orderSchema);
+export const Orders = mongoose.model('orders', orderSchema);
+export const OrdersInProgress = mongoose.model('orders-in-progress', orderSchema);
+
