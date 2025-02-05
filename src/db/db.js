@@ -28,6 +28,12 @@ export async function fetchAndSaveDataToDB(data) {
   console.log('Data saved to MongoDB Atlas!', newEntry);
 }
 
+export async function getAllFromDB() {
+  const newEntry = await Orders.find();
+  //console.log('Data saved to MongoDB Atlas!', newEntry);
+  return newEntry;
+}
+
 export async function statusFilteredDataToDB(targetStatus) {
   try {
     console.log('Orders in table ORDERS ', await Orders.find());
