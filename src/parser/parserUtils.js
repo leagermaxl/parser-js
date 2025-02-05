@@ -6,7 +6,7 @@ export const processFetchData = async (path, isLink) => {
   let html = null;
   if (!isLink) html = await fs.readFile(path, 'utf-8');
   else html = await fetchData(path);
-
+  
   // console.log('html', html);
 
   const dom = new JSDOM(html);
@@ -162,11 +162,11 @@ export function processOrderData(orderArray) {
     if (products) {
       processedOrder.products = products;
     }
-
+      
     if (data['Дата заказа']) {
       processedOrder.orderDate = new Date(data['Дата заказа']);
     }
-
+    
     if (data['Сумма']) {
       processedOrder.totalAmount = data['Сумма'];
     }

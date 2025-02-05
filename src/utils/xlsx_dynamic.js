@@ -1,31 +1,60 @@
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 
-const filePath = 'orders_1.xlsx';
-
-// Функция для получения всех уникальных полей из объектов
+// Функция для получения всех уникальных полей из заказов
 function getAllFields(orders) {
   const fields = new Set();
-
   orders.forEach((order) => {
-    // Добавляем поля из корневого уровня
     Object.keys(order).forEach((key) => {
-      if (key !== 'products') fields.add(key); // Исключаем 'products', так как это массив
+      if (key !== 'products') {
+        if (order[key] && typeof order[key] === 'object' && !Array.isArray(order[key])) {
+          if (order[key] instanceof Date) {
+            // Если это объект Date, добавляем его как обычное поле
+            fields.add(key);
+          } else {
+            // Иначе добавляем вложенные поля
+            Object.keys(order[key]).forEach((subKey) => {
+              fields.add(`${key}.${subKey}`);
+            });
+          }
+        } else {
+          fields.add(key);
+        }
+      }
     });
 
-    // Добавляем поля из объектов внутри 'products'
     order.products.forEach((product) => {
-      Object.keys(product).forEach((key) => {
-        fields.add(`product_${key}`); // Добавляем префикс, чтобы избежать конфликтов имен
-      });
+      if (product.quantity !== undefined) fields.add('product.quantity');
+      if (product.name !== undefined) fields.add('product.name');
     });
   });
-
   return Array.from(fields);
 }
 
+// Функция для форматирования даты
+function formatDate(date) {
+  if (!(date instanceof Date)) return date; // Если это не дата, возвращаем как есть
+  return date.toLocaleDateString('ru-RU'); // Форматируем дату в формате DD.MM.YYYY
+}
+
+// Функция для форматирования денежной суммы
+function formatCurrency(value) {
+  if (typeof value === 'string') {
+    const numericValue = parseFloat(value.replace(/[^0-9.-]+/g, '')); // Убираем пробелы и символы валюты
+    return isNaN(numericValue) ? value : numericValue;
+  }
+  return value;
+}
+
+// Функция для безопасного получения значения по вложенному пути
+function getFieldValue(obj, field) {
+  return field.split('.').reduce((acc, key) => {
+    return acc && acc[key] !== undefined ? acc[key] : null;
+  }, obj);
+}
+
 // Функция для создания Excel файла
-export async function createStyledExcel(orders) {
+export async function createStyledExcel(orders, filePath) {
   let workbook;
   if (fs.existsSync(filePath)) {
     workbook = new ExcelJS.Workbook();
@@ -37,10 +66,10 @@ export async function createStyledExcel(orders) {
 
   const worksheet = workbook.getWorksheet('Orders') || workbook.addWorksheet('Orders');
 
-  // Получаем все уникальные поля
+  // Получаем все уникальные поля (без поля products)
   const fields = getAllFields(orders);
 
-  // Если файл новый, создаем заголовки
+  // Если файл новый, создаём заголовки
   if (worksheet.rowCount === 0) {
     const headerRow = worksheet.addRow(fields);
 
@@ -55,27 +84,47 @@ export async function createStyledExcel(orders) {
   // Заполняем таблицу данными
   orders.forEach((order) => {
     const startRow = worksheet.rowCount + 1;
-
+    // Для каждого продукта создаём отдельную строку
     order.products.forEach((product, index) => {
       const rowData = fields.map((field) => {
-        if (field.startsWith('product_')) {
-          // Обрабатываем поля из 'products'
-          const productField = field.replace('product_', '');
+        // Если поле относится к продукту
+        if (field.startsWith('product.')) {
+          // Например, field = "product.quantity" или "product.name"
+          const productField = field.split('.')[1]; // получаем 'quantity' или 'name'
           return product[productField];
         } else {
-          // Обрабатываем поля из корневого уровня
-          return index === 0 ? order[field] : null; // Только первая строка для корневых полей
+          // Для корневых полей запишем данные только в первую строку заказа
+          const value = index === 0 ? getFieldValue(order, field) : null;
+          // Форматируем дату, если это объект Date
+          if (field === 'totalAmount' || field === 'amountWithCoupon') {
+            return formatCurrency(value); // Форматируем денежное значение
+          }
+          return value instanceof Date ? formatDate(value) : value;
         }
       });
 
-      worksheet.addRow(rowData);
+      const row = worksheet.addRow(rowData);
+
+      // Применяем выравнивание по центру для всех ячеек, кроме product.name
+      row.eachCell((cell, colNumber) => {
+        const field = fields[colNumber - 1];
+        if (field !== 'product.name') {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+
+        // Если это денежный столбец, применяем форматирование
+        if (field === 'totalAmount' || field === 'amountWithCoupon') {
+          cell.numFmt = '"₽" #,##0.00'; // Формат денежного поля с рублями
+        }
+      });
     });
 
-    // Объединяем ячейки для корневых полей
+    // Если в заказе несколько продуктов, объединяем ячейки для корневых данных
     if (order.products.length > 1) {
       fields.forEach((field, colIndex) => {
-        if (!field.startsWith('product_')) {
-          const colLetter = String.fromCharCode(65 + colIndex); // A, B, C, ...
+        if (!field.startsWith('product.')) {
+          // Определяем букву столбца
+          const colLetter = worksheet.getColumn(colIndex + 1).letter;
           worksheet.mergeCells(`${colLetter}${startRow}:${colLetter}${worksheet.rowCount}`);
           worksheet.getCell(`${colLetter}${startRow}`).alignment = {
             vertical: 'middle',
@@ -111,7 +160,5 @@ export async function createStyledExcel(orders) {
 
   // Сохраняем файл
   await workbook.xlsx.writeFile(filePath);
-  console.log('Новые заказы добавлены в orders.xlsx!');
+  console.log(`Новые заказы добавлены в ${filePath}`);
 }
-
-// createStyledExcel(orders).catch(console.error);
