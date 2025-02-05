@@ -2,16 +2,16 @@ import { processFetchData, processFetchOrders } from '../parser/parserUtils.js';
 
 export async function processOrders(orderIds, urlOrder) {
   const ordersData = [];
+
   for (let i = orderIds.length - 1; i >= 0; i--) {
     // for (let i = 0; i < Math.min(orderIds.length, 50); i++) {
     console.log('myCallback');
-    const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderId}`);
+    const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderNum}`);
     console.log('[REQUEST TO]:', `${updatedUrl}`);
 
     ordersData.push(await processFetchData(updatedUrl, true));
 
     if (i === orderIds.length - 50) return ordersData;
-
     const { max, min } = { max: 3000, min: 500 };
     const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;
 
@@ -45,7 +45,7 @@ export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
     } else {
       orderIds = await processFetchOrders(updatedUrlPage, true);
     }
-    // console.log('orderIds', orderIds[0]);
+    // console.log('orderIds', orderIds);
 
     ordersData.push(...(await processOrders(orderIds, urlOrder)));
 

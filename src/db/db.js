@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import { Orders } from './default_model.js';
+import { Orders, OrdersInProgress } from './default_model.js';
 
 const uri = process.env.MONGO_URI;
 console.log(uri);
@@ -14,9 +14,25 @@ export async function connectToDatabase() {
   }
 }
 
+export async function disconnectFromDatabase() {
+  try {
+    await mongoose.disconnect();
+    console.log('🔴 Disconnected from MongoDB');
+  } catch (err) {
+    console.error('❌ Error disconnecting from MongoDB:', err);
+  }
+}
+
 export async function fetchAndSaveDataToDB(data) {
   const newEntry = await Orders.insertMany(data);
   console.log('Data saved to MongoDB Atlas!', newEntry);
+}
+
+
+export async function getAllFromDB() {
+  const newEntry = await Orders.find();
+  //console.log('Data saved to MongoDB Atlas!', newEntry);
+  return newEntry;
 }
 
 export async function statusFilteredDataToDB(targetStatus) {
@@ -37,4 +53,3 @@ export async function statusFilteredDataToDB(targetStatus) {
     console.log(e.message);
   }
 }
-
