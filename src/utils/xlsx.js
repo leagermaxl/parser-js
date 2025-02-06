@@ -1,9 +1,28 @@
 import ExcelJS from 'exceljs';
 import fs from 'fs';
+import path from 'path';
 
-const filePath = 'orders.xlsx';
+// async function createFolder() {
+const date = new Date();
+const folderName = `${String(date.getDate()).padStart(2, '0')}-${String(
+  date.getMonth() + 1,
+).padStart(2, '0')}-${date.getFullYear()}`;
 
-export async function createStyledExcel(orders) {
+const folderPath = path.join(process.cwd(), folderName);
+
+// }
+
+// const filePath = folderPath + 'orders.xlsx';
+
+export async function createStyledExcel(couponCode, orders) {
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath);
+    console.log(`📁 Папка создана: ${folderPath}`);
+  } else {
+    console.log(`⚠ Папка уже существует: ${folderPath}`);
+  }
+
+  const filePath = folderPath + `\\${couponCode}.xlsx`;
   let workbook;
   // Если файл существует, загружаем его
   if (fs.existsSync(filePath)) {
@@ -19,15 +38,29 @@ export async function createStyledExcel(orders) {
 
   // Если файл новый, создаём заголовки
   if (worksheet.rowCount === 0) {
-    const headerRow = worksheet.addRow([
-      'Order ID',
-      'Order Number',
-      'Order Date',
-      'Total Amount',
-      'Amount With Coupon',
-      'Product Name',
-      'Quantity',
-    ]);
+    let headerRow;
+    if (couponCode === 'face10') {
+      headerRow = worksheet.addRow([
+        '№',
+        '№ заказа',
+        'Дата',
+        'Сумма заказа',
+        'Сумма выплаты 15%',
+        'Статус',
+        'Наименование',
+        'Количество',
+        'Сумма',
+      ]);
+    } else {
+      headerRow = worksheet.addRow([
+        '№',
+        '№ заказа',
+        'Сумма заказа',
+        'Сумма выплаты 15%',
+        'Статус',
+        'Сумма',
+      ]);
+    }
 
     // Стили для заголовков
     headerRow.eachCell((cell) => {
@@ -37,32 +70,71 @@ export async function createStyledExcel(orders) {
     });
   }
 
+  // // Если файл новый, создаём заголовки
+  // if (worksheet.rowCount === 0) {
+  //   const headerRow = worksheet.addRow([
+  //     'Order ID',
+  //     'Order Number',
+  //     'Order Date',
+  //     'Total Amount',
+  //     'Amount With Coupon',
+  //     'Product Name',
+  //     'Quantity',
+  //   ]);
+
+  //   // Стили для заголовков
+  //   headerRow.eachCell((cell) => {
+  //     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Белый текст
+  //     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F81BD' } }; // Синий фон
+  //     cell.alignment = { horizontal: 'center' };
+  //   });
+  // }
+
   let rowIndex = worksheet.rowCount + 1; // Начинаем с первой свободной строки
 
-  orders.forEach((order) => {
+  orders.some((order, ind) => {
     const startRow = rowIndex;
-    order.products.forEach((product, index) => {
+    if (couponCode === 'face10') {
+      order.products.forEach((product, index) => {
+        worksheet.addRow([
+          index === 0 ? ind : null,
+          index === 0 ? order.orderId : null,
+          index === 0 ? order.orderDate : null,
+          index === 0 ? order.amountWithCoupon : null,
+          index === 0 ? order.amountPayment : null,
+          index === 0 ? order.orderStatus.text : null,
+          product.name,
+          product.quantity,
+          ind === 0 ? orders['amountEntire'] : null,
+        ]);
+        rowIndex++;
+      });
+      // Объединяем ячейки для заказной информации
+      ['A', 'B', 'C', 'D', 'E', 'F', 'I'].forEach((col) => {
+        worksheet.mergeCells(`${col}${startRow}:${col}${rowIndex - 1}`);
+        worksheet.getCell(`${col}${startRow}`).alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+        };
+      });
+    } else {
       worksheet.addRow([
-        index === 0 ? order.orderId : null,
-        index === 0 ? order.orderNum : null,
-        index === 0 ? order.orderDate : null,
-        index === 0 ? order.totalAmount : null,
-        index === 0 ? order.amountWithCoupon : null,
-        product.name,
-        product.quantity,
+        ind,
+        order.orderId,
+        order.amountWithCoupon,
+        order.amountPayment,
+        order.orderStatus.text,
+        ind === 0 ? orders['amountEntire'] : null,
       ]);
       rowIndex++;
-    });
+      ['A', 'B', 'C', 'D', 'E', 'F'].forEach((col) => {
+        worksheet.getCell(`${col}${startRow}`).alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+        };
+      });
+    }
 
-    // Объединяем ячейки для заказной информации
-    // if (order.products.length > 1) {
-    ['A', 'B', 'C', 'D', 'E'].forEach((col) => {
-      worksheet.mergeCells(`${col}${startRow}:${col}${rowIndex - 1}`);
-      worksheet.getCell(`${col}${startRow}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
-    });
     // }
 
     // Устанавливаем границы и автоширину колонок
@@ -87,9 +159,10 @@ export async function createStyledExcel(orders) {
       });
       column.width = maxLength + 2;
     });
+    if (ind >= orders.length - 2) return true;
   });
 
   // Сохранение файла
   await workbook.xlsx.writeFile(filePath);
-  console.log('Новые заказы добавлены в orders.xlsx!');
+  console.log(`Новые заказы добавлены в ${filePath}!`);
 }

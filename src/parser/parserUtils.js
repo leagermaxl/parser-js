@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { JSDOM } from 'jsdom';
-import { fetchData } from '../fetch/fetchUtils.js';
 import { DateTime } from 'luxon';
+import { fetchData } from '../fetch/fetchUtils.js';
 
 export const processFetchData = async (path, isLink) => {
   let html = null;
@@ -142,6 +142,7 @@ export function processOrderData(orderArray) {
     orderDate: null,
     totalAmount: '',
     amountWithCoupon: '',
+    amountPayment: 0.0,
     products: [],
     coupon: null,
     // ERROR: null,
@@ -171,11 +172,14 @@ export function processOrderData(orderArray) {
     }
 
     if (data['Сумма']) {
-      processedOrder.totalAmount = data['Сумма'];
+      processedOrder.totalAmount = parseFloat(data['Сумма'].replace(/\s|руб\./g, ''));
     }
 
-    if (data['Сумма к оплате']) {
-      processedOrder.amountWithCoupon = data['Сумма к оплате'];
+    if (data['Сумма со скидками']) {
+      processedOrder.amountWithCoupon = parseFloat(
+        data['Сумма со скидками'].replace(/\s|руб\./g, ''),
+      );
+      processedOrder.amountPayment = Math.round(processedOrder.amountWithCoupon * 0.15 * 100) / 100;
     }
 
     if (couponField) {
@@ -199,9 +203,8 @@ export const processFetchOrders = async (path, isLink, lastOrderIdDB) => {
   const hasOrder = Array.from(orderIdsHTML).some((orderId) => {
     const order = orderId.textContent.replace(/[()]/g, '').split(/\s+/);
 
-    if (parseInt(order[0]) === lastOrderIdDB) return true;
-
     orderIds.push({ orderId: order[0], orderNum: order[1] });
+    if (parseInt(order[0]) === lastOrderIdDB) return true;
   });
   // console.log(hasOrder);
   // console.log(orderIds);

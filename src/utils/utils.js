@@ -55,3 +55,16 @@ export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
   console.log('ordersData', ordersData);
   return ordersData;
 }
+
+export async function groupingOrdersByCoupon(orders) {
+  const groupedOrders = orders
+    .filter((order) => order.coupon && order.coupon.code)
+    .reduce((acc, order) => {
+      const couponCode = order.coupon.code.toLowerCase();
+      if (!acc[couponCode]) acc[couponCode] = [];
+
+      acc[couponCode].push(order);
+      return acc;
+    }, {});
+  return groupedOrders;
+}
