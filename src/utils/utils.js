@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import { processFetchData, processFetchOrders } from '../parser/parserUtils.js';
 
 export async function processOrders(orderIds, urlOrder) {
@@ -68,3 +69,28 @@ export async function groupingOrdersByCoupon(orders) {
     }, {});
   return groupedOrders;
 }
+
+export async function readLastOrderIdFromFile(filePath) {
+  try {
+    const data = await fs.readFile(filePath, 'utf-8');
+    const number = parseFloat(data.replace(/\s+/g, ''));
+    if (isNaN(number)) throw new Error('Файл не содержит число!');
+    console.log('Id последнего заказа:', number);
+    return number;
+  } catch (error) {
+    console.error('Ошибка чтения файла:', error);
+  }
+}
+
+export async function writeLastOrderIdToFile(filePath, number) {
+  try {
+    await fs.writeFile(filePath, number.toString(), 'utf-8');
+    console.log(`Id последнего заказа ${number} записано в файл: ${filePath}`);
+  } catch (error) {
+    console.error('Ошибка записи файла:', error);
+  }
+}
+
+// Использование
+// readLastOrderIdFromFile('config.txt');
+// writeLastOrderIdToFile('config.txt', 323);

@@ -1,4 +1,9 @@
-import { groupingOrdersByCoupon, requestsForOrders } from './utils/utils.js';
+import {
+  groupingOrdersByCoupon,
+  readLastOrderIdFromFile,
+  requestsForOrders,
+  writeLastOrderIdToFile,
+} from './utils/utils.js';
 import { createStyledExcel } from './utils/xlsx.js';
 
 const urlPage =
@@ -8,7 +13,10 @@ const urlOrder =
 
 const main = async () => {
   // await connectToDatabase();
-  const orders = await requestsForOrders(urlPage, urlOrder, 19425);
+  const lastOrderId = await readLastOrderIdFromFile('config.txt');
+
+  const orders = await requestsForOrders(urlPage, urlOrder, lastOrderId);
+
   // console.log('orders', orders);
 
   const groupedOrders = await groupingOrdersByCoupon(orders);
@@ -23,6 +31,7 @@ const main = async () => {
     console.log(groupedOrders);
     await createStyledExcel(couponCode, groupedOrders[couponCode]);
   }
+  writeLastOrderIdToFile('config.txt', orders[orders.length - 1].orderId);
 
   // Object.keys(groupedOrders).forEach((couponCode) => {
   //   createStyledExcel(couponCode, groupedOrders[couponCode]);
