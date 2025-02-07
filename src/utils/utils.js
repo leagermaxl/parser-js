@@ -6,9 +6,9 @@ export async function processOrders(orderIds, urlOrder) {
 
   for (let i = orderIds.length - 1; i >= 0; i--) {
     // for (let i = 0; i < Math.min(orderIds.length, 50); i++) {
-    console.log('myCallback');
     const updatedUrl = urlOrder.replace(/(order_id=)\d+/, `$1${orderIds[i].orderNum}`);
-    console.log('[REQUEST TO]:', `${updatedUrl}`);
+    // console.log('[REQUEST TO]:', `${updatedUrl}`);
+    console.log('Достаем информацию заказа', `${orderIds[i].orderId}`);
 
     ordersData.push(await processFetchData(updatedUrl, true));
 
@@ -24,22 +24,21 @@ export async function processOrders(orderIds, urlOrder) {
 
 export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
   let pages = 0;
-
+  console.log('Ищем последний заказ на странице ', pages + 1);
   while (
     (await processFetchOrders(urlPage.replace(/(p=)\d+/, `$1${pages}`), true, lastOrderIdDB)) ==
     null
   ) {
     pages++;
-    console.log(pages);
+    console.log('Ищем последний заказ на странице ', pages + 1);
   }
   let page = pages;
   const ordersData = [];
 
   while (page >= 0) {
-    console.log('while');
-    console.log('page', page);
+    console.log('Достаем товары со страницы ', page + 1);
     const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
-    console.log(updatedUrlPage);
+    // console.log(updatedUrlPage);
 
     let orderIds;
     if (ordersData.length === 0) {
@@ -47,13 +46,12 @@ export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
     } else {
       orderIds = await processFetchOrders(updatedUrlPage, true);
     }
-    // console.log('orderIds', orderIds);
 
     ordersData.push(...(await processOrders(orderIds, urlOrder)));
 
     page--;
   }
-  console.log('ordersData', ordersData);
+  // console.log('ordersData', ordersData);
   return ordersData;
 }
 
@@ -85,12 +83,8 @@ export async function readLastOrderIdFromFile(filePath) {
 export async function writeLastOrderIdToFile(filePath, number) {
   try {
     await fs.writeFile(filePath, number.toString(), 'utf-8');
-    console.log(`Id последнего заказа ${number} записано в файл: ${filePath}`);
+    console.log(`Id следующего заказа ${number} записано в файл: ${filePath}`);
   } catch (error) {
     console.error('Ошибка записи файла:', error);
   }
 }
-
-// Использование
-// readLastOrderIdFromFile('config.txt');
-// writeLastOrderIdToFile('config.txt', 323);

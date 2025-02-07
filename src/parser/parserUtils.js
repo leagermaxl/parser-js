@@ -48,7 +48,7 @@ export const processFetchData = async (path, isLink) => {
   //console.log('Найденные таблицы:', tableData);
 
   const result = processOrderData(tableData);
-  console.log('Обработанный заказ:\n', result);
+  // console.log('Обработанный заказ:\n', result);
   return result;
 };
 
@@ -90,11 +90,6 @@ function getProducts(document, selector) {
       seenNames.add(product.name);
     }
   });
-
-  /*console.log('Найденные товары:');
-    uniqueProducts.forEach((product, index) => {
-      console.log(`${index + 1}. ${product.quantity} шт. - ${product.name}`);
-    });*/
 
   return uniqueProducts;
 }

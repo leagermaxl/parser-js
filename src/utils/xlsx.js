@@ -2,7 +2,6 @@ import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
 
-// async function createFolder() {
 const date = new Date();
 const folderName = `${String(date.getDate()).padStart(2, '0')}-${String(
   date.getMonth() + 1,
@@ -10,16 +9,12 @@ const folderName = `${String(date.getDate()).padStart(2, '0')}-${String(
 
 const folderPath = path.join(process.cwd(), folderName);
 
-// }
-
-// const filePath = folderPath + 'orders.xlsx';
-
 export async function createStyledExcel(couponCode, orders) {
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath);
     console.log(`📁 Папка создана: ${folderPath}`);
   } else {
-    console.log(`⚠ Папка уже существует: ${folderPath}`);
+    // console.log(`Папка уже существует: ${folderPath}`);
   }
 
   const filePath = folderPath + `\\${couponCode}.xlsx`;
@@ -69,26 +64,6 @@ export async function createStyledExcel(couponCode, orders) {
       cell.alignment = { horizontal: 'center' };
     });
   }
-
-  // // Если файл новый, создаём заголовки
-  // if (worksheet.rowCount === 0) {
-  //   const headerRow = worksheet.addRow([
-  //     'Order ID',
-  //     'Order Number',
-  //     'Order Date',
-  //     'Total Amount',
-  //     'Amount With Coupon',
-  //     'Product Name',
-  //     'Quantity',
-  //   ]);
-
-  //   // Стили для заголовков
-  //   headerRow.eachCell((cell) => {
-  //     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Белый текст
-  //     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F81BD' } }; // Синий фон
-  //     cell.alignment = { horizontal: 'center' };
-  //   });
-  // }
 
   let rowIndex = worksheet.rowCount + 1; // Начинаем с первой свободной строки
 
@@ -159,10 +134,10 @@ export async function createStyledExcel(couponCode, orders) {
       });
       column.width = maxLength + 2;
     });
-    if (ind >= orders.length - 2) return true;
+    if (ind >= orders.length - 1) return true;
   });
 
   // Сохранение файла
   await workbook.xlsx.writeFile(filePath);
-  console.log(`Новые заказы добавлены в ${filePath}!`);
+  console.log(`Информация о заказах по промокоду ${couponCode} добавлена в ${filePath}!`);
 }
