@@ -24,19 +24,19 @@ export async function processOrders(orderIds, urlOrder) {
 
 export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
   let pages = 0;
-  console.log('Ищем последний заказ на странице ', pages + 1);
+  console.log('Ищем последний заказ на странице', pages + 1);
   while (
     (await processFetchOrders(urlPage.replace(/(p=)\d+/, `$1${pages}`), true, lastOrderIdDB)) ==
     null
   ) {
     pages++;
-    console.log('Ищем последний заказ на странице ', pages + 1);
+    console.log('Ищем последний заказ на странице', pages + 1);
   }
   let page = pages;
   const ordersData = [];
 
   while (page >= 0) {
-    console.log('Достаем товары со страницы ', page + 1);
+    console.log('Достаем заказы со страницы', page + 1);
     const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
     // console.log(updatedUrlPage);
 
@@ -55,9 +55,53 @@ export async function requestsForOrders(urlPage, urlOrder, lastOrderIdDB) {
   return ordersData;
 }
 
+export async function requestsForOrdersByArray(urlPage, urlOrder, ordersInProgress) {
+  let pages = 0;
+  console.log('Ищем заказы "в работе" на странице', pages + 1);
+  while (
+    (await processFetchOrders(
+      urlPage.replace(/(p=)\d+/, `$1${pages}`),
+      true,
+      ordersInProgress[0].orderId,
+    )) == null
+  ) {
+    pages++;
+    console.log('Ищем заказы "в работе" на странице', pages + 1);
+  }
+  let page = pages;
+  const ordersData = [];
+
+  while (page >= 0) {
+    console.log('Достаем заказы "в работе" со страницы', page + 1);
+    const updatedUrlPage = urlPage.replace(/(p=)\d+/, `$1${page}`);
+    // console.log(updatedUrlPage);
+
+    const orderIds = await processFetchOrders(updatedUrlPage, true, ordersInProgress[0].orderId);
+
+    const ordersIdsInProgress = [];
+
+    ordersInProgress.some((order) => {
+      const orderFind = orderIds.find((ord) => parseInt(ord.orderId) === order.orderId);
+      if (orderFind) ordersIdsInProgress.push(orderFind);
+      else return false;
+    });
+    console.log(ordersIdsInProgress);
+    if (ordersIdsInProgress.length > 0) {
+      ordersInProgress.splice(0, ordersIdsInProgress.length);
+
+      ordersData.push(...(await processOrders(ordersIdsInProgress, urlOrder)));
+    }
+    // console.log('ordersInProgress', ordersInProgress);
+
+    page--;
+  }
+  // console.log('ordersData', ordersData);
+  return ordersData;
+}
+
 export async function groupingOrdersByCoupon(orders) {
   const groupedOrders = orders
-    .filter((order) => order.coupon && order.coupon.code)
+    .filter((order) => order.coupon && order.coupon.code && order.orderStatus.value !== 4)
     .reduce((acc, order) => {
       const couponCode = order.coupon.code.toLowerCase();
       if (!acc[couponCode]) acc[couponCode] = [];
@@ -66,6 +110,18 @@ export async function groupingOrdersByCoupon(orders) {
       return acc;
     }, {});
   return groupedOrders;
+}
+
+export async function filteringOrdersInProgress(orders) {
+  const inProgressOrders = [];
+  // const inProgressOrders = orders.filter((order) => order.orderStatus.value === 2);
+  orders.forEach((order) => {
+    if (order.orderStatus.value === 2 || order.orderStatus.value === 1) {
+      inProgressOrders.push({ orderId: order.orderId, orderNum: order.orderNum });
+    }
+  });
+
+  return inProgressOrders;
 }
 
 export async function readLastOrderIdFromFile(filePath) {
@@ -84,6 +140,27 @@ export async function writeLastOrderIdToFile(filePath, number) {
   try {
     await fs.writeFile(filePath, number.toString(), 'utf-8');
     console.log(`Id следующего заказа ${number} записано в файл: ${filePath}`);
+  } catch (error) {
+    console.error('Ошибка записи файла:', error);
+  }
+}
+export async function readArrayFromJson(filePath) {
+  try {
+    const rawData = await fs.readFile(filePath, 'utf8');
+    const orders = JSON.parse(rawData);
+    console.log('Id последнего заказа:', orders.lastOrderId);
+    console.log('Заказы "в работе" считаны из файла в количестве:', orders.ordersInProgress.length);
+    return orders;
+  } catch (error) {
+    console.error('Ошибка чтения файла:', error);
+  }
+}
+
+export async function writeArrayInJson(filePath, array) {
+  try {
+    const jsonData = JSON.stringify(array, null, 2);
+    await fs.writeFile(filePath, jsonData, 'utf8');
+    console.log(`Заказы "в работе" сохранены в файл: ${filePath}`);
   } catch (error) {
     console.error('Ошибка записи файла:', error);
   }

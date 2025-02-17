@@ -12,7 +12,7 @@ const folderPath = path.join(process.cwd(), folderName);
 export async function createStyledExcel(couponCode, orders) {
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath);
-    console.log(`📁 Папка создана: ${folderPath}`);
+    console.log(`Папка создана: ${folderPath}`);
   } else {
     // console.log(`Папка уже существует: ${folderPath}`);
   }
@@ -34,7 +34,19 @@ export async function createStyledExcel(couponCode, orders) {
   // Если файл новый, создаём заголовки
   if (worksheet.rowCount === 0) {
     let headerRow;
-    if (couponCode === 'face10') {
+    if (couponCode === 'all') {
+      headerRow = worksheet.addRow([
+        '№',
+        '№ заказа',
+        'id заказа',
+        'Дата',
+        'Сумма заказа',
+        'Сумма выплаты 15%',
+        'Статус',
+        'Наименование',
+        'Количество',
+      ]);
+    } else if (couponCode === 'face10') {
       headerRow = worksheet.addRow([
         '№',
         '№ заказа',
@@ -67,9 +79,41 @@ export async function createStyledExcel(couponCode, orders) {
 
   let rowIndex = worksheet.rowCount + 1; // Начинаем с первой свободной строки
 
+  //'№',
+  //'№ заказа',
+  //'id заказа',
+  //'Дата',
+  //'Сумма заказа',
+  //'Сумма выплаты 15%',
+  //'Статус',
+  //'Наименование',
+  //'Количество',
   orders.some((order, ind) => {
     const startRow = rowIndex;
-    if (couponCode === 'face10') {
+    if (couponCode === 'all') {
+      order.products.forEach((product, index) => {
+        worksheet.addRow([
+          index === 0 ? ind : null,
+          index === 0 ? order.orderId : null,
+          index === 0 ? order.orderNum : null,
+          index === 0 ? order.orderDate : null,
+          index === 0 ? order.amountWithCoupon : null,
+          index === 0 ? order.amountPayment : null,
+          index === 0 ? order.orderStatus.text : null,
+          product.name,
+          product.quantity,
+        ]);
+        rowIndex++;
+      });
+      // Объединяем ячейки для заказной информации
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col) => {
+        worksheet.mergeCells(`${col}${startRow}:${col}${rowIndex - 1}`);
+        worksheet.getCell(`${col}${startRow}`).alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+        };
+      });
+    } else if (couponCode === 'face10') {
       order.products.forEach((product, index) => {
         worksheet.addRow([
           index === 0 ? ind : null,
