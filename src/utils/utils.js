@@ -80,11 +80,13 @@ export async function requestsForOrdersByArray(urlPage, urlOrder, ordersInProgre
 
     const ordersIdsInProgress = [];
 
-    ordersInProgress.some((order) => {
-      const orderFind = orderIds.find((ord) => parseInt(ord.orderId) === order.orderId);
-      if (orderFind) ordersIdsInProgress.push(orderFind);
-      else return false;
-    });
+    if (orderIds) {
+      ordersInProgress.some((order) => {
+        const orderFind = orderIds.find((ord) => parseInt(ord.orderId) === order.orderId);
+        if (orderFind) ordersIdsInProgress.push(orderFind);
+        else return true;
+      });
+    }
     console.log(ordersIdsInProgress);
     if (ordersIdsInProgress.length > 0) {
       ordersInProgress.splice(0, ordersIdsInProgress.length);

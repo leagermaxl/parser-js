@@ -19,6 +19,7 @@ const main = async () => {
   const orders = [];
 
   const dataFromConfig = await readArrayFromJson(pathFileConfig);
+  dataFromConfig.ordersInProgress.reverse();
 
   if (dataFromConfig.ordersInProgress.length > 0) {
     const ordersByArray = await requestsForOrdersByArray(
