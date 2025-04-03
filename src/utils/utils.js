@@ -14,7 +14,7 @@ export async function processOrders(orderIds, urlOrder) {
 
     if (i === orderIds.length - 50) return ordersData;
 
-    const { max, min } = { max: 3000, min: 500 };
+    const { max, min } = { max: 2000, min: 500 };
     const randomInterval = Math.floor(Math.random() * (max - min + 1)) + 500;
 
     await new Promise((resolve) => setTimeout(resolve, randomInterval));
@@ -87,12 +87,13 @@ export async function requestsForOrdersByArray(urlPage, urlOrder, ordersInProgre
         else return true;
       });
     }
-    console.log(ordersIdsInProgress);
+    // console.log(ordersIdsInProgress);
     if (ordersIdsInProgress.length > 0) {
       ordersInProgress.splice(0, ordersIdsInProgress.length);
 
       ordersData.push(...(await processOrders(ordersIdsInProgress, urlOrder)));
     }
+    if (ordersInProgress.length <= 0) return ordersData;
     // console.log('ordersInProgress', ordersInProgress);
 
     page--;

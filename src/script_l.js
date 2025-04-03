@@ -19,7 +19,8 @@ const main = async () => {
   const orders = [];
 
   const dataFromConfig = await readArrayFromJson(pathFileConfig);
-  dataFromConfig.ordersInProgress.reverse();
+  dataFromConfig.ordersInProgress.sort((a, b) => a.orderId - b.orderId);
+  // console.log(dataFromConfig.ordersInProgress);
 
   if (dataFromConfig.ordersInProgress.length > 0) {
     const ordersByArray = await requestsForOrdersByArray(
@@ -29,6 +30,7 @@ const main = async () => {
     );
     orders.push(...ordersByArray);
   }
+  orders.sort((a, b) => a.orderId - b.orderId);
 
   const ordersFromLastOrderId = await requestsForOrders(
     urlPage,
