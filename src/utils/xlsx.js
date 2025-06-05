@@ -46,7 +46,7 @@ export async function createStyledExcel(couponCode, orders) {
         'Наименование',
         'Количество',
       ]);
-    } else if (couponCode === 'face10') {
+    } else {
       headerRow = worksheet.addRow([
         '№',
         '№ заказа',
@@ -58,16 +58,29 @@ export async function createStyledExcel(couponCode, orders) {
         'Количество',
         'Сумма',
       ]);
-    } else {
-      headerRow = worksheet.addRow([
-        '№',
-        '№ заказа',
-        'Сумма заказа',
-        'Сумма выплаты 15%',
-        'Статус',
-        'Сумма',
-      ]);
     }
+    // else if (couponCode === 'face10') {
+    //   headerRow = worksheet.addRow([
+    //     '№',
+    //     '№ заказа',
+    //     'Дата',
+    //     'Сумма заказа',
+    //     'Сумма выплаты 15%',
+    //     'Статус',
+    //     'Наименование',
+    //     'Количество',
+    //     'Сумма',
+    //   ]);
+    // } else {
+    //   headerRow = worksheet.addRow([
+    //     '№',
+    //     '№ заказа',
+    //     'Сумма заказа',
+    //     'Сумма выплаты 15%',
+    //     'Статус',
+    //     'Сумма',
+    //   ]);
+    // }
 
     // Стили для заголовков
     headerRow.eachCell((cell) => {
@@ -113,7 +126,8 @@ export async function createStyledExcel(couponCode, orders) {
           horizontal: 'center',
         };
       });
-    } else if (couponCode === 'face10') {
+      // } else if (couponCode === 'face10') {
+    } else {
       order.products.forEach((product, index) => {
         worksheet.addRow([
           index === 0 ? ind : null,
@@ -136,23 +150,24 @@ export async function createStyledExcel(couponCode, orders) {
           horizontal: 'center',
         };
       });
-    } else {
-      worksheet.addRow([
-        ind,
-        order.orderId,
-        order.amountWithCoupon,
-        order.amountPayment,
-        order.orderStatus.text,
-        ind === 0 ? orders['amountEntire'] : null,
-      ]);
-      rowIndex++;
-      ['A', 'B', 'C', 'D', 'E', 'F'].forEach((col) => {
-        worksheet.getCell(`${col}${startRow}`).alignment = {
-          vertical: 'middle',
-          horizontal: 'center',
-        };
-      });
     }
+    // else {
+    //   worksheet.addRow([
+    //     ind,
+    //     order.orderId,
+    //     order.amountWithCoupon,
+    //     order.amountPayment,
+    //     order.orderStatus.text,
+    //     ind === 0 ? orders['amountEntire'] : null,
+    //   ]);
+    //   rowIndex++;
+    //   ['A', 'B', 'C', 'D', 'E', 'F'].forEach((col) => {
+    //     worksheet.getCell(`${col}${startRow}`).alignment = {
+    //       vertical: 'middle',
+    //       horizontal: 'center',
+    //     };
+    //   });
+    // }
 
     // }
 
