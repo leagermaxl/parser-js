@@ -21,7 +21,7 @@ export const processFetchData = async (path, isLink) => {
 
   const orderStatus = getOrderStatus(document, '#order_status_style');
 
-  const products = getProducts(document, 'tr:not(.view-hidden)');
+  const products = getProducts(document);
 
   const tableData = Array.from(tables).map((table, index) => {
     const rows = table.querySelectorAll('tr');
@@ -61,26 +61,55 @@ function getOrderStatus(document, selector) {
   };
 }
 
-function getProducts(document, selector) {
+function getProducts(document) {
+  // 1. Ищем строки ТОЛЬКО внутри таблицы товаров (#order-products-table)
+  // И берем только тело таблицы (tbody), чтобы исключить шапку
+  const selector = '#order-products-table tbody tr:not(.view-hidden)';
   const rows = document.querySelectorAll(selector);
 
   const products = Array.from(rows)
-    .filter((row) => row.querySelector('.product-name'))
+    .filter((row) => {
+      // Дополнительная проверка: строка должна иметь класс .product-name внутри
+      // И должна иметь достаточное количество ячеек (минимум 11, судя по HTML)
+      return row.querySelector('.product-name') && row.querySelectorAll('td').length > 5;
+    })
     .map((row) => {
+      const cells = row.querySelectorAll('td');
+
+      // 1. Название и Артикул
       const nameElement = row.querySelector('.product-name');
-      const quantityCell = row.querySelector('td:nth-child(9)');
+      const articleElement = row.querySelector('.article');
 
-      const quantityText = quantityCell.textContent.trim();
-      const quantity = parseFloat(quantityText.replace(/[^0-9.,]/g, ''));
+      // 2. Картинка (ищем img внутри первой ячейки)
+      const imgElement = row.querySelector('td img');
+      const imgUrl = imgElement ? imgElement.src : null;
 
-      const productName = nameElement.textContent.trim();
+      // 3. Числовые значения
+      // Важно: проверяем, существуют ли ячейки перед обращением к ним
+      // Индексы из вашего HTML: [6]=Цена, [8]=Кол-во, [10]=Итого
+      const priceText = cells[6] ? cells[6].textContent.trim() : '0';
+      const quantityText = cells[8] ? cells[8].textContent.trim() : '0';
+      const totalText = cells[10] ? cells[10].textContent.trim() : '0';
+
+      const cleanNumber = (str) => {
+        if (!str) return 0;
+        // Удаляем все кроме цифр, точки и запятой
+        const cleaned = str.replace(/[^0-9.,]/g, '').replace(',', '.');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
+      };
 
       return {
-        quantity,
-        name: productName,
+        name: nameElement ? nameElement.textContent.trim() : 'Unknown',
+        article: articleElement ? articleElement.textContent.trim() : null,
+        image: imgUrl,
+        price: cleanNumber(priceText),
+        quantity: cleanNumber(quantityText),
+        totalPrice: cleanNumber(totalText),
       };
     });
 
+  // Убираем дубликаты
   const uniqueProducts = [];
   const seenNames = new Set();
 
@@ -109,21 +138,54 @@ function getCoupon(data) {
 }
 
 function parseCoupon(data) {
-  const couponField = getCoupon(data);
+  // Список стандартных полей, которые НЕ являются купонами
+  const standardFields = ['Сумма', 'Вес', 'Сумма со скидками', 'Доставка', 'Сумма к оплате'];
 
-  const couponKey = Object.keys(couponField)[0];
-  if (!couponKey) return null;
+  // Ищем поле, которое не входит в стандартный список
+  const couponEntry = Object.entries(data).find(([key, value]) => {
+    // Проверяем, что это не стандартное поле
+    if (standardFields.includes(key)) return false;
 
-  const couponInfo = couponField[couponKey];
+    // Дополнительная проверка: значение должно быть похоже на описание скидки
+    // (содержать знак % или слово "Купон")
+    if (value && (value.includes('%') || value.includes('Купон'))) return true;
 
-  const percentMatch = couponInfo.match(/(\d+)\s*%/);
-  const codeMatch = couponInfo.match(/\(Купон\s*\/\s*([^)]+)\)/);
+    return false;
+  });
 
-  if (!percentMatch || !codeMatch) return null;
+  if (!couponEntry) return null;
+
+  const [rawKey, rawValue] = couponEntry;
+
+  // 1. Парсим процент скидки (ищем число перед знаком %)
+  const percentMatch = rawValue.match(/(\d+)\s*%/);
+  const discountPercent = percentMatch ? percentMatch[1] + '%' : null;
+
+  // 2. Парсим код купона
+  let code = '';
+
+  // Сначала пробуем найти код внутри скобок: (Купон / CODE)
+  const codeInBracketsMatch = rawValue.match(/\(Купон\s*\/\s*([^)]+)\)/);
+
+  if (codeInBracketsMatch && codeInBracketsMatch[1].trim().length > 0) {
+    // Если код есть внутри скобок - берем его
+    code = codeInBracketsMatch[1].trim();
+  } else {
+    // Если в скобках пусто, значит код купона - это сам ключ (название поля в таблице)
+    // Например, если ключ "curlegina", а значение "10 % (Купон / )"
+    code = rawKey.trim();
+  }
+
+  // Защита: если ключ случайно оказался словом "Купон" или "Скидка", и кода нигде нет, оставляем null или пустую строку
+  if (code.toLowerCase() === 'купон' || code.toLowerCase() === 'скидка') {
+    if (code === rawKey) code = '';
+  }
+
+  code = code.toLocaleLowerCase();
 
   return {
-    discountPercent: percentMatch[1] + '%',
-    code: codeMatch[1].trim(),
+    discountPercent,
+    code,
   };
 }
 
@@ -142,7 +204,7 @@ export function processOrderData(orderArray) {
     coupon: null,
     // ERROR: null,
   });
-
+  //  console.log(orderArray);
   orderArray.forEach((item) => {
     const { data, OrderNumber, products, orderStatus } = item;
 
@@ -158,12 +220,18 @@ export function processOrderData(orderArray) {
 
     if (products) {
       processedOrder.products = products;
+      //console.log(products);
+      //console.log(couponField);
     }
 
     if (data['Дата заказа']) {
-      processedOrder.orderDate = DateTime.fromFormat(data['Дата заказа'], "dd.MM.yy HH:mm 'UTC'Z")
-        .toUTC()
-        .toJSDate();
+      processedOrder.orderDate = DateTime.fromFormat(
+        data['Дата заказа'],
+        'dd.MM.yy HH:mm',
+      ).toFormat('dd.MM.yyyy');
+      //processedOrder.orderDate = DateTime.fromFormat(data['Дата заказа'], "dd.MM.yy HH:mm 'UTC'Z")
+      //  .toUTC()
+      //  .toJSDate();
     }
 
     if (data['Сумма']) {
@@ -174,13 +242,53 @@ export function processOrderData(orderArray) {
       processedOrder.amountWithCoupon = parseFloat(
         data['Сумма со скидками'].replace(/\s|руб\./g, ''),
       );
-      processedOrder.amountPayment = Math.round(processedOrder.amountWithCoupon * 0.15 * 100) / 100;
+
+      if (!couponField) {
+        processedOrder.amountPayment =
+          Math.round(processedOrder.amountWithCoupon * 0.15 * 100) / 100;
+      } else {
+        processedOrder.amountPayment = products.reduce((sum, product) => {
+          if (
+            couponField?.code.toLowerCase() === 'curlegina' &&
+            product.name === 'Стейфолия Сыворотка для кожи головы и волос'
+          ) {
+            sum +=
+              Math.round(
+                product.totalPrice *
+                  (1.0 - parseInt(couponField?.discountPercent) / 100) *
+                  0.2 *
+                  100,
+              ) / 100;
+          } else {
+            sum +=
+              Math.round(
+                product.totalPrice *
+                  (1.0 - parseInt(couponField?.discountPercent) / 100) *
+                  0.15 *
+                  100,
+              ) / 100;
+          }
+          return sum;
+        }, 0);
+      }
+
+      //if (
+      //  couponField.code.toLowerCase() === 'curlegina' &&
+      //  products.includes((product) => product.name === 'Стейфолия масло для кожи головы и волос')
+      //) {
+      //  processedOrder.amountPayment =
+      //    Math.round(processedOrder.amountWithCoupon * 0.2 * 100) / 100;
+      //} else {
+      //  processedOrder.amountPayment =
+      //    Math.round(processedOrder.amountWithCoupon * 0.15 * 100) / 100;
+      //}
     }
 
     if (couponField) {
       processedOrder.coupon = couponField;
     }
   });
+  console.log(processedOrder);
   return processedOrder;
 }
 

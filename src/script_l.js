@@ -9,9 +9,9 @@ import {
 import { createStyledExcel } from './utils/xlsx.js';
 
 const urlPage =
-  'https://cp21.megagroup.ru/-/cms/v1/shop2/order/?shop_id=4373441&ver_id=1586314&access=u%3B1623555&p=0';
+  'https://cp21.megagroup.ru/-/cms/v1/shop2/order/?shop_id=4373441&ver_id=1586314&access=u%3B663161&p=0';
 const urlOrder =
-  'https://cp21.megagroup.ru/-/cms/v1/shop2/order/?ver_id=1586314&access=u%3B1623555&shop_id=4373441&order_id=9109509&act=view';
+  'https://cp21.megagroup.ru/-/cms/v1/shop2/order/?ver_id=1586314&access=u%3B663161&shop_id=4373441&order_id=9109509&act=view';
 
 const pathFileConfig = 'config.json';
 
@@ -38,6 +38,10 @@ const main = async () => {
     dataFromConfig.lastOrderId,
   );
   orders.push(...ordersFromLastOrderId);
+  orders.amountEntire = orders
+    .filter((order) => order.orderStatus.value === 3)
+    .reduce((acc, order) => acc + order.amountPayment, 0);
+  console.log(orders);
   await createStyledExcel('all', orders);
 
   const inProgressOrders = await filteringOrdersInProgress(orders);

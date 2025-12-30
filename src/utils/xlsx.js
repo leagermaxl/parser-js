@@ -10,6 +10,8 @@ const folderName = `${String(date.getDate()).padStart(2, '0')}-${String(
 const folderPath = path.join(process.cwd(), folderName);
 
 export async function createStyledExcel(couponCode, orders) {
+  const SPECIAL_PRODUCT_NAME = 'Стейфолия Сыворотка для кожи головы и волос';
+
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath);
     console.log(`Папка создана: ${folderPath}`);
@@ -41,10 +43,25 @@ export async function createStyledExcel(couponCode, orders) {
         'id заказа',
         'Дата',
         'Сумма заказа',
-        'Сумма выплаты 15%',
+        'Сумма выплаты',
         'Статус',
         'Наименование',
         'Количество',
+        'Сумма',
+      ]);
+    } else if (couponCode === 'curlegina') {
+      headerRow = worksheet.addRow([
+        '№',
+        '№ заказа',
+        'Дата',
+        'Сумма заказа',
+        'Ставка',
+        'Выплата',
+        'Итого выплата',
+        'Статус',
+        'Наименование',
+        'Количество',
+        'Сумма',
       ]);
     } else {
       headerRow = worksheet.addRow([
@@ -115,6 +132,7 @@ export async function createStyledExcel(couponCode, orders) {
           index === 0 ? order.orderStatus.text : null,
           product.name,
           product.quantity,
+          ind === 0 ? orders['amountEntire'] : null,
         ]);
         rowIndex++;
       });
@@ -126,7 +144,42 @@ export async function createStyledExcel(couponCode, orders) {
           horizontal: 'center',
         };
       });
-      // } else if (couponCode === 'face10') {
+      // else if (couponCode === 'face10') {}
+    } else if (couponCode === 'curlegina') {
+      order.products.forEach((product, index) => {
+        // 1. Определяем ставку
+        // Сравнение может быть строгим (===) или частичным (.includes)
+        const isSpecial = product.name === SPECIAL_PRODUCT_NAME;
+        const rateLabel = isSpecial ? '20%' : '15%';
+        const rateMultiplier = isSpecial ? 0.2 : 0.15;
+
+        // 2. Считаем комиссию за товар
+        const productTotalPrice = product.totalPrice || 0;
+        const itemCommission = (productTotalPrice * rateMultiplier * 0.9).toFixed(2);
+
+        worksheet.addRow([
+          index === 0 ? ind : null,
+          index === 0 ? order.orderId : null,
+          index === 0 ? order.orderDate : null,
+          index === 0 ? order.amountWithCoupon : null,
+          rateLabel,
+          itemCommission,
+          index === 0 ? order.amountPayment : null,
+          index === 0 ? order.orderStatus.text : null,
+          product.name,
+          product.quantity,
+          ind === 0 ? orders['amountEntire'] : null,
+        ]);
+        rowIndex++;
+      });
+      // Объединяем ячейки для заказной информации
+      ['A', 'B', 'C', 'D', 'G', 'H'].forEach((col) => {
+        worksheet.mergeCells(`${col}${startRow}:${col}${rowIndex - 1}`);
+        worksheet.getCell(`${col}${startRow}`).alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+        };
+      });
     } else {
       order.products.forEach((product, index) => {
         worksheet.addRow([
@@ -143,7 +196,7 @@ export async function createStyledExcel(couponCode, orders) {
         rowIndex++;
       });
       // Объединяем ячейки для заказной информации
-      ['A', 'B', 'C', 'D', 'E', 'F', 'I'].forEach((col) => {
+      ['A', 'B', 'C', 'D', 'E', 'F'].forEach((col) => {
         worksheet.mergeCells(`${col}${startRow}:${col}${rowIndex - 1}`);
         worksheet.getCell(`${col}${startRow}`).alignment = {
           vertical: 'middle',
